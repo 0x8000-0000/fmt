@@ -1125,6 +1125,8 @@ struct buffer_context {
 typedef buffer_context<char>::type format_context;
 typedef buffer_context<wchar_t>::type wformat_context;
 
+constexpr unsigned long long PACKED_BIT = (1ull << 63);
+
 /**
   \rst
   An array of references to arguments. It can be implicitly converted into
@@ -1150,17 +1152,18 @@ class format_arg_store {
 
   friend class basic_format_args<Context>;
 
-  static FMT_CONSTEXPR11 long long get_types() {
+  static FMT_CONSTEXPR11 unsigned long long get_types() {
     return IS_PACKED ?
-      static_cast<long long>(internal::get_types<Context, Args...>()) :
-      -static_cast<long long>(NUM_ARGS);
+      internal::get_types<Context, Args...>() :
+      (PACKED_BIT | NUM_ARGS);
   }
 
  public:
+
 #if FMT_USE_CONSTEXPR11
-  static FMT_CONSTEXPR11 long long TYPES = get_types();
+  static FMT_CONSTEXPR11 unsigned long long TYPES = get_types();
 #else
-  static const long long TYPES;
+  static const unsigned long long TYPES;
 #endif
 
 #if (FMT_GCC_VERSION && FMT_GCC_VERSION <= 405) || \
@@ -1179,7 +1182,7 @@ class format_arg_store {
 
 #if !FMT_USE_CONSTEXPR11
 template <typename Context, typename ...Args>
-const long long format_arg_store<Context, Args...>::TYPES = get_types();
+const unsigned long long format_arg_store<Context, Args...>::TYPES = get_types();
 #endif
 
 /**
@@ -1228,10 +1231,9 @@ class basic_format_args {
 
   format_arg do_get(size_type index) const {
     format_arg arg;
-    long long signed_types = static_cast<long long>(types_);
-    if (signed_types < 0) {
-      unsigned long long num_args =
-          static_cast<unsigned long long>(-signed_types);
+    const bool signed_types = (types_ & PACKED_BIT);
+    if (signed_types) {
+      unsigned long long num_args = types_ & (~PACKED_BIT);
       if (index < num_args)
         arg = args_[index];
       return arg;
@@ -1256,7 +1258,7 @@ class basic_format_args {
    */
   template <typename... Args>
   basic_format_args(const format_arg_store<Context, Args...> &store)
-  : types_(static_cast<unsigned long long>(store.TYPES)) {
+  : types_(store.TYPES) {
     set_data(store.data_);
   }
 
@@ -1266,7 +1268,7 @@ class basic_format_args {
    \endrst
    */
   basic_format_args(const format_arg *args, size_type count)
-  : types_(-static_cast<int64_t>(count)) {
+  : types_(PACKED_BIT | count) {
     set_data(args);
   }
 
@@ -1279,10 +1281,16 @@ class basic_format_args {
   }
 
   unsigned max_size() const {
-    long long signed_types = static_cast<long long>(types_);
-    return static_cast<unsigned>(
-        signed_types < 0 ?
-        -signed_types : static_cast<long long>(internal::max_packed_args));
+    const bool signed_types = (types_ & PACKED_BIT);
+    if (signed_types)
+    {
+       return types_ & (~PACKED_BIT);
+    }
+    else
+    {
+        return internal::max_packed_args;
+    }
+
   }
 };
 
