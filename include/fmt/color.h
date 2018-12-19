@@ -246,7 +246,8 @@ struct color_type {
   }
   FMT_CONSTEXPR color_type(rgb rgb_color) FMT_NOEXCEPT
     : is_rgb(true), value{} {
-    value.rgb_color = (static_cast<uint32_t>(rgb_color.r) << 16) | (static_cast<uint32_t>(rgb_color.g) << 8) | rgb_color.b;
+    value.rgb_color = (static_cast<uint32_t>(rgb_color.r) << 16)
+       | (static_cast<uint32_t>(rgb_color.g) << 8) | rgb_color.b;
   }
   FMT_CONSTEXPR color_type(terminal_color term_color) FMT_NOEXCEPT
     : is_rgb(), value{} {

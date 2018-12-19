@@ -1009,7 +1009,8 @@ inline Char *format_uint(Char *buffer, UInt value, int num_digits,
   do {
     const char *digits = upper ? "0123456789ABCDEF" : "0123456789abcdef";
     unsigned digit = (value & ((1 << BASE_BITS) - 1));
-    *--buffer = static_cast<Char>(BASE_BITS < 4 ? static_cast<char>('0' + digit) : digits[digit]);
+    *--buffer = static_cast<Char>(BASE_BITS < 4 ? static_cast<char>('0' + digit)
+                                                : digits[digit]);
   } while ((value >>= BASE_BITS) != 0);
   return end;
 }
@@ -1977,9 +1978,7 @@ FMT_CONSTEXPR bool find(Ptr first, Ptr last, T value, Ptr &out) {
 template <>
 inline bool find<false, char>(
     const char *first, const char *last, char value, const char *&out) {
-  const std::ptrdiff_t length = last - first;
-  FMT_ASSERT(length >= 0, "invalid input range");
-  out = static_cast<const char*>(std::memchr(first, value, static_cast<size_t>(length)));
+  out = static_cast<const char*>(std::memchr(first, value, internal::to_unsigned(last - first)));
   return out != FMT_NULL;
 }
 
@@ -2059,7 +2058,7 @@ FMT_CONSTEXPR const typename ParseContext::char_type *
 
 template <typename Char, typename ErrorHandler, typename... Args>
 class format_string_checker {
-  enum { INVALID_ARG_ID = 0xffffffffu };
+  enum { INVALID_ARG_ID = std::numeric_limits<unsigned>::max() };
  public:
   explicit FMT_CONSTEXPR format_string_checker(
       basic_string_view<Char> format_str, ErrorHandler eh)
@@ -2327,7 +2326,7 @@ class basic_writer {
   template <typename Spec, typename F>
   void write_int(int num_digits, string_view prefix,
                  const Spec &spec, F f) {
-    std::size_t size = prefix.size() + static_cast<size_t>(num_digits);
+    std::size_t size = prefix.size() + internal::to_unsigned(num_digits);
     char_type fill = static_cast<char_type>(spec.fill());
     std::size_t padding = 0;
     if (spec.align() == ALIGN_NUMERIC) {
@@ -2912,7 +2911,7 @@ inline void format_decimal(char *&buffer, T value) {
   }
   int num_digits = internal::count_digits(abs_value);
   internal::format_decimal<char>(
-        internal::make_checked(buffer, static_cast<size_t>(num_digits)), abs_value, num_digits);
+        internal::make_checked(buffer, internal::to_unsigned(num_digits)), abs_value, num_digits);
   buffer += num_digits;
 }
 

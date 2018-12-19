@@ -172,7 +172,7 @@ void format_error_code(internal::buffer &out, int error_code,
     abs_value = 0 - abs_value;
     ++error_code_size;
   }
-  error_code_size += static_cast<size_t>(internal::count_digits(abs_value));
+  error_code_size += internal::to_unsigned(internal::count_digits(abs_value));
   writer w(out);
   if (message.size() <= inline_buffer_size - error_code_size) {
     w.write(message);
