@@ -2619,7 +2619,7 @@ class format_string_checker {
  public:
   explicit FMT_CONSTEXPR format_string_checker(
       basic_string_view<Char> format_str, ErrorHandler eh)
-      : arg_id_(max_value<unsigned>()),
+      : arg_id_(ARG_ID_SENTINEL),
         context_(format_str, eh),
         parse_funcs_{&parse_format_specs<Args, parse_context_type>...} {}
 
@@ -2660,7 +2660,9 @@ class format_string_checker {
   // Format specifier parsing function.
   using parse_func = const Char* (*)(parse_context_type&);
 
-  unsigned arg_id_;
+  enum { ARG_ID_SENTINEL = -1 };
+
+  int arg_id_;
   parse_context_type context_;
   parse_func parse_funcs_[num_args > 0 ? num_args : 1];
 };
